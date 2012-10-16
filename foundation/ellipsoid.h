@@ -107,6 +107,7 @@ namespace spatial {
 
     private:
 
+        // private attributes
         unsigned short _code;
         double _semiMajorAxis;
         double _semiMinorAxis;
