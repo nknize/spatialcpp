@@ -28,14 +28,14 @@ namespace spatial {
     //    char *USGSName;
         double semiMajorAxis;
         double invFlattening;
-        char *fullName;
+        string fullName;
     } EllipsoidDefinition;
 
     /**
      * Easily accessible array of geodetic system definitions
      * @REF: worldwind31.arc.nasa.gov
      */
-    static const EllipsoidDef ellipsoidList[] = {
+    static const EllipsoidDefinition ellipsoidList[] = {
         { 7001, 6377563.396, 299.3249646, "Airy 1830" },
         { 7002, 6377340.189, 299.3249646, "Airy Modified 1849"},
         { 7003, 6378160.0, 298.25, "Australian National Spheroid" },
@@ -105,14 +105,14 @@ namespace spatial {
                 this->_flattening = 1.0 / ellipsoidList[i].invFlattening;
                 this->_semiMajorAxis = ellipsoidList[i].semiMajorAxis;
                 this->_semiMinorAxis = this->_semiMajorAxis * (1.0 - this->_flattening);
-                this->_eccentricity = this->sqrt( (2.0-this->_flattening)*this->_flattening );
+                this->_eccentricity = sqrt( (2.0-this->_flattening)*this->_flattening );
                 initialized = true;
 
                 break;
             }
         }
         
-        uassert(1000, "Ellipsoid::initialize(): Failed to initialize ellipsoid datum", status);
+        uassert(1000, "Ellipsoid::initialize(): Failed to initialize ellipsoid datum", initialized);
     }
 
 }
