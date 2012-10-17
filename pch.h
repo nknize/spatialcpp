@@ -17,8 +17,12 @@
 #include <stdlib.h>
 #include <sstream>
 
+#include <boost/geometry.hpp>
+
 namespace spatial {
     using namespace std;
+
+    using namespace boost::geometry;
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -32,4 +36,15 @@ namespace spatial {
 #define TO_RADIANS 0.0174532925199432958
 #endif
 
+#ifdef __GNUC__
+#define NO_RETURN __attribute__((__noreturn__))
+#else
+#define NO_RETURN
+#endif
+
+#ifndef uassert
+#define uassert(msgid, msg, expr) (void)( (bool)(!!(expr)) || (NORETURN, 0) )
+#endif
+
+#undef NORETURN
 }
