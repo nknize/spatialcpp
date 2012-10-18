@@ -49,6 +49,13 @@ namespace spatial {
         void utmToECF( const CartesianPoint3D& utmPt, CartesianPoint3D &ecfPt ) const;
         void mgrsToECF( const string& mgrsPt, CartesianPoint3D &ecfPt ) const;
 
+        void latLonAltToENU( const GeoPointRad3D& llaPt, const GeoPointRad3D& refPt,
+                             CartesianPoint3D &enuPt ) const;
+        void ecfToENU( const CartesianPoint3D& ecfPt, const GeoPointRad3D& refPt, 
+                       CartesianPoint3D &enuPt ) const;
+        // utm
+        // mgrs
+
         void latLonAltToUTM( const GeoPointRad3D& llaPt, CartesianPoint3D &utmPt ) const;
         void enuToUTM( const CartesianPoint3D& enuPt, const GeoPointRad3D& refPt, 
                        CartesianPoint3D &utmPt ) const;
