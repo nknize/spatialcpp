@@ -136,7 +136,7 @@ if nix:
     if has_option( "distcc" ):
         env["CSS"] = "distcc " + env["CXX"]
 
-    env.Append( CPPFLAGS="-fPIC -fno-strict-aliasing -ggdb -gdwarf-2 -Wall -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch" )
+    env.Append( CPPFLAGS="-fPIC -fno-strict-aliasing -lm -ggdb -gdwarf-2 -Wall -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch" )
     if linux:
         env.Append( CPPFLAGS=" -Werror " )
         if not has_option('clang'):

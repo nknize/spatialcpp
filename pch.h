@@ -16,12 +16,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sstream>
+#include <cmath>
 
-#include <boost/geometry.hpp>
+#include <boost/geometry/geometry.hpp>
 
 namespace spatial {
     using namespace std;
-
     using namespace boost::geometry;
 
 #ifndef M_PI
@@ -42,9 +42,14 @@ namespace spatial {
 #define NO_RETURN
 #endif
 
+void uasserted(int msgid, const char *msg) NO_RETURN;
+
 #ifndef uassert
-#define uassert(msgid, msg, expr) (void)( (bool)(!!(expr)) || (NORETURN, 0) )
+#define uassert(msgid, msg, expr) (void)( (bool)(!!(expr)) || (uasserted(msgid, msg), 0) )
 #endif
 
-#undef NORETURN
+    typedef cs::geographic<degree> GeoDeg;
+    typedef cs::geographic<radian> GeoRad;
+    typedef cs::cartesian Cartesian;
+
 }

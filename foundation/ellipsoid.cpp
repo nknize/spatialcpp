@@ -28,14 +28,14 @@ namespace spatial {
     //    char *USGSName;
         double semiMajorAxis;
         double invFlattening;
-        char *fullName;
+        string fullName;
     } EllipsoidDefinition;
 
     /**
      * Easily accessible array of geodetic system definitions
      * @REF: worldwind31.arc.nasa.gov
      */
-    static const EllipsoidDef ellipsoidList[] = {
+    static const EllipsoidDefinition ellipsoidList[] = {
         { 7001, 6377563.396, 299.3249646, "Airy 1830" },
         { 7002, 6377340.189, 299.3249646, "Airy Modified 1849"},
         { 7003, 6378160.0, 298.25, "Australian National Spheroid" },
@@ -105,15 +105,154 @@ namespace spatial {
                 this->_flattening = 1.0 / ellipsoidList[i].invFlattening;
                 this->_semiMajorAxis = ellipsoidList[i].semiMajorAxis;
                 this->_semiMinorAxis = this->_semiMajorAxis * (1.0 - this->_flattening);
-                this->_eccentricity = this->sqrt( (2.0-this->_flattening)*this->_flattening );
+                this->_eccentricity = sqrt( (2.0-this->_flattening)*this->_flattening );
                 initialized = true;
 
                 break;
             }
         }
         
-        uassert(1000, "Ellipsoid::initialize(): Failed to initialize ellipsoid datum", status);
+        uassert(1000, "Ellipsoid::initialize(): Failed to initialize ellipsoid datum", initialized);
     }
 
+    /**
+     * Converts a 3D point from Earth-Centered Earth-Fixed 
+     * Cartesian coordinates to Lat, Lon, Alt
+     */
+    void Ellipsoid::ecfToLatLonAlt(const CartesianPoint3D& ecfPt, GeoPointRad3D& geoPt) const {
+        const double x = ecfPt.x;
+        const double y = ecfPt.y;
+        const double z = ecfPt.z;
+        const double eccFactor = (1-_eccentricity * _eccentricity);
+
+        // calculate longitude
+        const double lon = atan2(y, x);
+
+        // calculate initial lat, alt estimates (will converge later)
+        const double U = sqrt( x*x + y*y );
+        double estLat = atan( z / U );
+
+        double estPrimeVertROC = primeVertRadiusOfCurvature( estLat );
+        double estAlt = sqrt( x*x + y*y + z*z ) - estPrimeVertROC;
+
+        double deltaU = 0.0;
+        double deltaZ = 0.0;
+        int numIter = 0;
+
+        // create some temp variables outside loop to conserve memory
+        double cLat = 0.0; //cos( estLat );
+        double sLat = 0.0; //sin( estLat );
+        double estMeridianROC = 0.0; // meridRadiusOfCurvature( estLat );
+        double deltaLat = 0.0;
+        double deltaAlt = 0.0;
+        while( (fabs(deltaU) > _ITERATION_THRESHOLD) || 
+               (fabs(deltaZ) > _ITERATION_THRESHOLD) ) {
+            cLat = cos( estLat );
+            sLat = sin( estLat );
+            
+            estPrimeVertROC = primeVertRadiusOfCurvature( estLat );
+
+            deltaU = U - ( estPrimeVertROC + estAlt ) * cLat;
+            deltaZ = z - ( estPrimeVertROC * eccFactor + estAlt ) * sLat;
+
+            estMeridianROC = meridRadiusOfCurvature( estLat );
+
+            deltaLat = (-deltaU*sLat + deltaZ*cLat) / (estMeridianROC + estAlt);
+            deltaAlt = deltaU * cLat + deltaZ * sLat;
+
+            // update estimates for convergence
+            estLat += deltaLat;
+            estAlt += deltaAlt;
+
+            uassert(1001, "Ellipsoid::ecfToLatLonAlt(): solution does not converge", numIter<100);
+
+            ++numIter;
+        }
+
+        // set the results
+        geoPt.lat = estLat;
+        geoPt.lon = lon;
+        geoPt.alt = estAlt;
+    }
+
+    /**
+     * Converts a 3D point from ENU cartesian coordinates to Lat Lon Alt geoid coordinates
+     */
+    void Ellipsoid::enuToLatLonAlt( const CartesianPoint3D& enuPt, const GeoPointRad3D& refPt,
+                                    GeoPointRad3D &geoPt ) const {
+        // convert enuPt from enu to ecef
+        CartesianPoint3D enuPtECF;
+        enuToECF( enuPt, refPt, enuPtECF);
+
+        // convert ecf point to lla
+        ecfToLatLonAlt( enuPtECF, geoPt );
+    }
+
+
+    /**
+     * Converts a 3D point from ENU cartesian coordinates to ECF cartesian space
+     * This is the inverse rotation matrix and translation from ECFToENU - its just math 
+     */
+    void Ellipsoid::enuToECF( const CartesianPoint3D& enuPt, const GeoPointRad3D& refPt,
+                              CartesianPoint3D &ecfPt ) const {
+        // convert refPt from lla to ecf
+        CartesianPoint3D refPtECF;
+        latLonAltToECF( refPt, refPtECF );
+
+        ecfPt.x = (-enuPt.x*sin(refPt.lon) - 
+                  enuPt.y*sin(refPt.lat)*cos(refPt.lon) + 
+                  enuPt.z*cos(refPt.lat)*cos(refPt.lon)) + refPtECF.x;
+        ecfPt.y = (enuPt.x*cos(refPt.lon) - enuPt.y*sin(refPt.lat)*sin(refPt.lon) +
+                  enuPt.z*cos(refPt.lat)*sin(refPt.lon)) + refPtECF.y;
+        ecfPt.z = (enuPt.y*cos(refPt.lat) + enuPt.z*sin(refPt.lat)) + refPtECF.z;
+    }
+
+    /**
+     * Converts from lat, lon, alt (in radians) to ECF
+     */
+    void Ellipsoid::latLonAltToECF( const GeoPointRad3D& geoPt, CartesianPoint3D &ecfPt ) const {
+        const double primeVert = primeVertRadiusOfCurvature( geoPt.lat );
+        const double term = (primeVert + geoPt.alt) * cos( geoPt.lat );
+
+        ecfPt.x = term * cos( geoPt.lon );
+        ecfPt.y = term * sin( geoPt.lon );
+        ecfPt.z = (primeVert*(1-_eccentricity*_eccentricity)+geoPt.alt)*sin(geoPt.lat);
+    }
+
+    /**
+     * Converts from lat, lon, alt (in radians) to ENU
+     */
+    void Ellipsoid::latLonAltToENU( const GeoPointRad3D& geoPt, const GeoPointRad3D& refPt,
+                              CartesianPoint3D &enuPt ) const {
+        // convert geo point from lla to ecf
+        CartesianPoint3D geoPtECF;
+        latLonAltToECF( geoPt, geoPtECF );
+        
+        // convert geoPtECF to ENU
+        ecfToENU( geoPtECF, refPt, enuPt );
+    }
+
+    /**
+     * Converts a point from ECF cartesian coordinates to ENU cartesian coordinates
+     */
+    void Ellipsoid::ecfToENU( const CartesianPoint3D& ecfPt, const GeoPointRad3D& refPt,
+                              CartesianPoint3D &enuPt ) const {
+        // convert refPt from llat to ecf cartesian
+        CartesianPoint3D refPtECF;
+        latLonAltToECF( refPt, refPtECF );
+        // translate
+        enuPt.x = ecfPt.x - refPtECF.x;
+        enuPt.y = ecfPt.y - refPtECF.y;
+        enuPt.z = ecfPt.z - refPtECF.z;
+
+        // rotate
+        enuPt.x = -enuPt.x*sin(refPt.lon) + enuPt.y*cos(refPt.lon);
+        enuPt.y = -enuPt.x*sin(refPt.lat)*cos(refPt.lon) - 
+                  enuPt.y*sin(refPt.lat)*sin(refPt.lon) +
+                  enuPt.z*cos(refPt.lat);
+        enuPt.z = enuPt.x*cos(refPt.lat)*cos(refPt.lon) + 
+                  enuPt.y*cos(refPt.lat)*sin(refPt.lon) +
+                  enuPt.z*sin(refPt.lat);
+    }
 }
 
