@@ -18,7 +18,7 @@
 #include <sstream>
 #include <cmath>
 
-#include <boost/geometry.hpp>
+#include <boost/geometry/geometry.hpp>
 
 namespace spatial {
     using namespace std;

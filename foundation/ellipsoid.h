@@ -37,67 +37,71 @@ namespace spatial {
         //          angles are in radians except 
         
         // converts from earth-centered earth-fixed cartesian to lat,lon,alt spherical
-        const Point3D<GeoRad>& ecfToLatLonAlt( const Point3D<Cartesian>& ecfPt ) const;
-        const Point3D<GeoRad>& enuToLatLonAlt( const Point3D<Cartesian>& enuPt, 
-                                               const Point3D<GeoRad>& refPt ) const;
-        const Point3D<GeoRad>& utmToLatLonAlt( const Point3D<Cartesian>& utmPt ) const;
-        const Point3D<GeoRad>& mgrsToLatLonAlt( const string& mgrsPt ) const;
+        void ecfToLatLonAlt( const CartesianPoint3D& ecfPt, GeoPointRad3D &geoPt) const;
+        void enuToLatLonAlt( const CartesianPoint3D& enuPt, const GeoPointRad3D& refPt,
+                             GeoPointRad3D &geoPt) const;
+        void utmToLatLonAlt( const CartesianPoint3D& utmPt, GeoPointRad3D &geoPt ) const;
+        void mgrsToLatLonAlt( const string& mgrsPt, GeoPointRad3D &geoPt ) const;
 
-        const Point3D<Cartesian>& latLonAltToECF( const Point3D<GeoRad>& llaPt ) const;
-        const Point3D<Cartesian>& enuToECF( const Point3D<Cartesian>& enuPt, 
-                                            const Point3D<GeoRad>& refPt ) const;
-        const Point3D<Cartesian>& utmToECF( const Point3D<Cartesian>& utmPt ) const;
-        const Point3D<Cartesian>& mgrsToECF( const string& mgrsPt ) const;
+        void latLonAltToECF( const GeoPointRad3D& llaPt, CartesianPoint3D &ecfPt ) const;
+        void enuToECF( const CartesianPoint3D& enuPt, const GeoPointRad3D& refPt, 
+                       CartesianPoint3D &ecfPt ) const;
+        void utmToECF( const CartesianPoint3D& utmPt, CartesianPoint3D &ecfPt ) const;
+        void mgrsToECF( const string& mgrsPt, CartesianPoint3D &ecfPt ) const;
 
-        const Point3D<Cartesian>& latLonAltToUTM( const Point3D<GeoRad>& llaPt ) const;
-        const Point3D<Cartesian>& enuToUTM( const Point3D<Cartesian>& enuPt, 
-                                            const Point3D<GeoRad>& refPt ) const;
-        const Point3D<Cartesian>& ecfToUTM( const Point3D<Cartesian>& ecfPt ) const;
-        const Point3D<Cartesian>& mgrsToUTM( const string& mgrsPt ) const;
+        void latLonAltToUTM( const GeoPointRad3D& llaPt, CartesianPoint3D &utmPt ) const;
+        void enuToUTM( const CartesianPoint3D& enuPt, const GeoPointRad3D& refPt, 
+                       CartesianPoint3D &utmPt ) const;
+        void ecfToUTM( const CartesianPoint3D& ecfPt, CartesianPoint3D& utmPt ) const;
+        void mgrsToUTM( const string& mgrsPt, CartesianPoint3D &utmPt ) const;
 
-        const string& latLonAltToMGRS( const Point3D<GeoRad>& llaPt ) const;
-        const string& ecfToMGRS( const Point3D<Cartesian>& ecfPt ) const;
-        const string& enuToMGRS( const Point3D<Cartesian>& enuPt, 
-                                 const Point3D<GeoRad>& refPt ) const;
-        const string& utmToMGRS( const Point3D<Cartesian>& utmPt ) const;
+        void latLonAltToMGRS( const GeoPointRad3D& llaPt, string &mgrsPt ) const;
+        void ecfToMGRS( const CartesianPoint3D& ecfPt, string &mgrsPt ) const;
+        void enuToMGRS( const CartesianPoint3D& enuPt, const GeoPointRad3D& refPt, 
+                        string &mgrsPt) const;
+        void utmToMGRS( const CartesianPoint3D& utmPt, string &mgrsPt ) const;
 
         // convenience methods to handle degrees
-        void ecfToLatLonAltDeg( const Point3D<Cartesian>& ecfPt,
-                                Point3D<GeoDeg> &llaDeg) const {
-            Point3D<GeoRad> rad = ecfToLatLonAlt( ecfPt );
+        void ecfToLatLonAltDeg( const CartesianPoint3D& ecfPt,
+                                GeoPointDeg3D &llaDeg) const {
+            GeoPointRad3D rad; 
+            ecfToLatLonAlt( ecfPt, rad );
             transform(rad, llaDeg);
         }
-        void enuToLatLonAltDeg( const Point3D<Cartesian>& enuPt, const Point3D<GeoRad>& refPt,
-                                Point3D<GeoDeg> &llaDeg) const {
-            Point3D<GeoRad> rad = enuToLatLonAlt( enuPt, refPt );
+        void enuToLatLonAltDeg( const CartesianPoint3D& enuPt, const GeoPointRad3D& refPt,
+                                GeoPointDeg3D &llaDeg) const {
+            GeoPointRad3D rad;
+            enuToLatLonAlt( enuPt, refPt, rad );
             transform(rad, llaDeg);
         }
-        void utmToLatLonAltDeg( const Point3D<Cartesian>& utmPt,
-                                Point3D<GeoDeg> &llaDeg) const {
-            Point3D<GeoRad> rad = utmToLatLonAlt( utmPt );
+        void utmToLatLonAltDeg( const CartesianPoint3D& utmPt,
+                                GeoPointDeg3D &llaDeg) const {
+            GeoPointRad3D rad;
+            utmToLatLonAlt( utmPt, rad );
             transform(rad, llaDeg);
         }
         void mgrsToLatLonAltDeg( const string& mgrsPt,
-                                 Point3D<GeoDeg>& llaDeg) const {
-            Point3D<GeoRad> llaRad = mgrsToLatLonAlt( mgrsPt );
+                                 GeoPointDeg3D& llaDeg) const {
+            GeoPointRad3D llaRad;
+            mgrsToLatLonAlt( mgrsPt, llaRad );
             transform(llaRad, llaDeg);
         }
-        void latLonAltDegToECF( const Point3D<GeoDeg>& llaDeg, 
-                                Point3D<Cartesian> &ecef) const {
-            Point3D<GeoRad> llaRad;
+        void latLonAltDegToECF( const GeoPointDeg3D& llaDeg, 
+                                CartesianPoint3D &ecef) const {
+            GeoPointRad3D llaRad;
             transform(llaDeg, llaRad);
-            ecef = latLonAltToECF( llaRad );
+            latLonAltToECF( llaRad, ecef );
         }
-        void latLonAltDegToUTM( const Point3D<GeoDeg>& llaDeg,
-                                Point3D<Cartesian>& utm) const {
-            Point3D<GeoRad> llaRad;
+        void latLonAltDegToUTM( const GeoPointDeg3D& llaDeg,
+                                CartesianPoint3D& utm) const {
+            GeoPointRad3D llaRad;
             transform(llaDeg, llaRad);
-            utm = latLonAltToUTM( llaRad );
+            latLonAltToUTM( llaRad, utm );
         }
-        void latLonAltDegToMGRS( const Point3D<GeoDeg>& llaDeg, string& mgrs ) const {
-            Point3D<GeoRad> llaRad;
+        void latLonAltDegToMGRS( const GeoPointDeg3D& llaDeg, string& mgrs ) const {
+            GeoPointRad3D llaRad;
             transform(llaDeg, llaRad);
-            mgrs = latLonAltToMGRS( llaRad );
+            latLonAltToMGRS( llaRad, mgrs );
         }
         // - end conversions
 
@@ -121,6 +125,20 @@ namespace spatial {
         // print this ellipsoid object
         // @TODO: Replace this operation with a string buffer
         friend ostream& operator << ( ostream& os, const Ellipsoid& ellipsoid );
+
+        // ref: surveying.wb.psu.edu/sur351/georef/ellip3.htm (formula 7)
+        const double primeVertRadiusOfCurvature( const double lat ) const {
+            const double denom = _eccentricity * sin( lat );
+            return (_semiMajorAxis / sqrt( 1- denom * denom));
+        }
+
+        // ref: surveying.wb.psu.edu/sur351/georef/ellip3.htm (formula 6)
+        const double meridRadiusOfCurvature( const double lat ) const {
+            double eccSq = _eccentricity * _eccentricity;
+            double den = 1 - eccSq * sin( lat ) * sin( lat );
+
+            return _semiMajorAxis * (1-eccSq) / sqrt( den*den*den );
+        }
 
     private:
 

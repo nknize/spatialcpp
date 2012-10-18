@@ -115,5 +115,65 @@ namespace spatial {
         uassert(1000, "Ellipsoid::initialize(): Failed to initialize ellipsoid datum", initialized);
     }
 
+    /**
+     * Converts a 3D point from Earth-Centered Earth-Fixed 
+     * Cartesian coordinates to Lat, Lon, Alt
+     */
+    void Ellipsoid::ecfToLatLonAlt(const CartesianPoint3D& ecfPt, GeoPointRad3D& geoPt) const {
+        const double x = ecfPt.x;
+        const double y = ecfPt.y;
+        const double z = ecfPt.z;
+        const double eccFactor = (1-_eccentricity * _eccentricity);
+
+        // calculate longitude
+        const double lon = atan2(y, x);
+
+        // calculate initial lat, alt estimates (will converge later)
+        const double U = sqrt( x*x + y*y );
+        double estLat = atan( z / U );
+
+        double estPrimeVertROC = primeVertRadiusOfCurvature( estLat );
+        double estAlt = sqrt( x*x + y*y + z*z ) - estPrimeVertROC;
+
+        double deltaU = 0.0;
+        double deltaZ = 0.0;
+        int numIter = 0;
+
+        // create some temp variables outside loop to conserve memory
+        double cLat = 0.0; //cos( estLat );
+        double sLat = 0.0; //sin( estLat );
+        double estMeridianROC = 0.0; // meridRadiusOfCurvature( estLat );
+        double deltaLat = 0.0;
+        double deltaAlt = 0.0;
+        while( (fabs(deltaU) > _ITERATION_THRESHOLD) || 
+               (fabs(deltaZ) > _ITERATION_THRESHOLD) ) {
+            cLat = cos( estLat );
+            sLat = sin( estLat );
+            
+            estPrimeVertROC = primeVertRadiusOfCurvature( estLat );
+
+            deltaU = U - ( estPrimeVertROC + estAlt ) * cLat;
+            deltaZ = z - ( estPrimeVertROC * eccFactor + estAlt ) * sLat;
+
+            estMeridianROC = meridRadiusOfCurvature( estLat );
+
+            deltaLat = (-deltaU*sLat + deltaZ*cLat) / (estMeridianROC + estAlt);
+            deltaAlt = deltaU * cLat + deltaZ * sLat;
+
+            // update estimates for convergence
+            estLat += deltaLat;
+            estAlt += deltaAlt;
+
+            uassert(1001, "Ellipsoid::ecfToLatLonAlt(): solution does not converge", numIter<100);
+
+            ++numIter;
+        }
+
+        // set the results
+        geoPt.lat = estLat;
+        geoPt.lon = lon;
+        geoPt.alt = estAlt;
+    }
+
 }
 
