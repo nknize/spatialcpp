@@ -23,7 +23,49 @@
 
 namespace spatial {
 
+    /**
+     * Ellipsoid class defines a projection
+     */
     class Ellipsoid {
+    protected:
+
+        /**
+         * Parameter structure for converting this projection definition to
+         * UTM
+         */
+        typedef struct {
+            // lat lon to utm params
+            double rm;
+            double n;
+            double rho; // merid radius of curvature
+            double nu; // prime vertical radius of curvature
+            double S;
+            double A0, B0, C0, D0, E0;
+            double p;
+            double K1, K2, K3, K4, K5, A6;
+            static const double sin1 = 4.84814e-06; // legacy factor
+
+            // utm to lat lon params
+            double arc;
+            double mu;
+            double ei;
+            double ca, cb, cc, cd;
+            double n0;
+            double r0;
+            double _a1, _a2, _a3;
+            double dd0;
+            double t0;
+            double Q0;
+            double lof1, lof2, lof3;
+            double phi1;
+            double fact1, fact2, fact3;
+            double zoneCM;
+            static const double k0 = 0.9996; // central meridian scale factor for UTM
+        } UTMParams;
+
+        void initializeUTMtoLLParams( const CartesianPoint3D& utmPt );
+        void initializeLLtoUTMParams( const GeoPointRad3D& geoPt );
+
     public:
         /**
          * Constructor defaults to code 7030, 
@@ -54,6 +96,7 @@ namespace spatial {
         void ecfToENU( const CartesianPoint3D& ecfPt, const GeoPointRad3D& refPt, 
                        CartesianPoint3D &enuPt ) const;
         // utm
+
         // mgrs
 
         void latLonAltToUTM( const GeoPointRad3D& llaPt, CartesianPoint3D &utmPt ) const;
@@ -155,7 +198,7 @@ namespace spatial {
         double _semiMinorAxis;
         double _flattening;
         double _eccentricity;
+        
+        UTMParams _utmParams;
     };
-
-
-}
+} // spatial namespace

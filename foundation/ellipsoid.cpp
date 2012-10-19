@@ -107,12 +107,24 @@ namespace spatial {
                 this->_semiMinorAxis = this->_semiMajorAxis * (1.0 - this->_flattening);
                 this->_eccentricity = sqrt( (2.0-this->_flattening)*this->_flattening );
                 initialized = true;
-
                 break;
             }
         }
         
         uassert(1000, "Ellipsoid::initialize(): Failed to initialize ellipsoid datum", initialized);
+    }
+
+    /**
+     * Initializes the UTM conversion parameters
+     */
+    void Ellipsoid::initializeUTMtoLLParams(const CartesianPoint3D& utmPt) {
+        _utmParams.arc = utmPt.x / _utmParams.k0;
+        //_utmParams.mu = _utmParams.arc /
+                        
+    }
+
+    void Ellipsoid::initializeLLtoUTMParams(const GeoPointRad3D& geoPt) {
+
     }
 
     /**
@@ -253,6 +265,12 @@ namespace spatial {
         enuPt.z = enuPt.x*cos(refPt.lat)*cos(refPt.lon) + 
                   enuPt.y*cos(refPt.lat)*sin(refPt.lon) +
                   enuPt.z*sin(refPt.lat);
+    }
+
+    void Ellipsoid::latLonAltToUTM( const GeoPointRad3D& llaPt, CartesianPoint3D &utmPt ) const {
+    
+    
+
     }
 }
 

@@ -33,9 +33,18 @@ namespace spatial {
     class GeoPointRad3D {
     public:
         GeoPointRad3D() : lat(0.0), lon(0.0), alt(0.0) {}
-        double lat;
-        double lon; 
-        double alt;
+    
+        // airframe terminology
+        /** @TODO Double check yaw stored as angle not scalar */
+        const double roll() const { return lon; }
+        const double pitch() const { return lat; }
+        const double yaw() const { return alt; }
+        
+        void roll( const double roll ) { lon = roll; }
+        void pitch( const double pitch ) { lat = pitch; }
+        void yaw( const double yaw ) { alt = yaw; }
+
+        double lat, lon, alt;
     };
 
     class GeoPointDeg3D : public GeoPointRad3D {};
