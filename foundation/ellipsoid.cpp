@@ -106,6 +106,7 @@ namespace spatial {
                 this->_semiMajorAxis = ellipsoidList[i].semiMajorAxis;
                 this->_semiMinorAxis = this->_semiMajorAxis * (1.0 - this->_flattening);
                 this->_eccentricity = sqrt( (2.0-this->_flattening)*this->_flattening );
+                this->_ee = this->_eccentricity*this->_eccentricity/(1.0-this->_eccentricity*this->_eccentricity);
                 initialized = true;
                 break;
             }
@@ -115,16 +116,113 @@ namespace spatial {
     }
 
     /**
-     * Initializes the UTM conversion parameters
+     * Initializes the UTM to LLA conversion parameters
+     *
+     * utmPt.x : easting
+     * utmPt.y : northing
      */
     void Ellipsoid::initializeUTMtoLLParams(const CartesianPoint3D& utmPt) {
-        _utmParams.arc = utmPt.x / _utmParams.k0;
-        //_utmParams.mu = _utmParams.arc /
-                        
+        // a : SemiMajorAxis
+        // b : SemiMinorAxis
+        // e : eccentricity
+        // e1sq : eccentricity squared
+
+
+        _utmParams.arc = utmPt.y / _utmParams.k0;
+        double e2 = _eccentricity*_eccentricity;
+        double e4 = e2*e2;
+        double e6 = e4*e2;
+        double muDen =  (_semiMajorAxis * (1.0-e2/4.0-3.0*e4/64.0-5*e6/256.0));
+        _utmParams.mu = _utmParams.arc / muDen;
+        _utmParams.ei = (1.0-sqrt(1.0-e2))/(1.0+sqrt(1.0-e2));
+        double ei2 = _utmParams.ei * _utmParams.ei * _utmParams.ei;
+        _utmParams.ca = 3.0 * _utmParams.ei / 2.0 - 27.0 * (ei2*_utmParams.ei) / 32.0;
+        _utmParams.cb = 21.0 * ei2 / 16.0 - 55.0 * (ei2*ei2) / 32.0;
+        _utmParams.cc = 151.0 * (ei2*_utmParams.ei) / 96.0;
+        _utmParams.cd = 1097.0 * (ei2*ei2) / 512.0;
+        _utmParams.phi1 = _utmParams.mu + 
+                          _utmParams.ca * sin(2.0*_utmParams.mu) + _utmParams.cb * sin(4.0*_utmParams.mu) + 
+                          _utmParams.cc * sin(6.0*_utmParams.mu) + _utmParams.cd * sin(8.0*_utmParams.mu);
+        double eSinPhi = _eccentricity * sin(_utmParams.phi1);
+        _utmParams.n0 = _semiMajorAxis / sqrt( 1.0 - (eSinPhi*eSinPhi) );
+        _utmParams.r0 = _semiMajorAxis * (1.0 - e2) / 
+                        sqrt( (1.0-(eSinPhi*eSinPhi))*(1.0-(eSinPhi*eSinPhi))*(1.0-(eSinPhi*eSinPhi)) );
+        _utmParams.fact1 = _utmParams.n0 * tan(_utmParams.phi1) / _utmParams.r0;
+        _utmParams._a1 = 500000.0 - utmPt.x;
+        _utmParams.dd0 = _utmParams._a1 / (_utmParams.n0 * _utmParams.k0);
+        _utmParams.fact2 = _utmParams.dd0 * _utmParams.dd0 / 2.0;
+
+        double dd02 = _utmParams.dd0 * _utmParams.dd0;
+        _utmParams.t0 = tan(_utmParams.phi1)*tan(_utmParams.phi1);
+        _utmParams.Q0 = e2 * (cos(_utmParams.phi1)*cos(_utmParams.phi1));
+        _utmParams.fact3 = (5.0 + 3.0 * _utmParams.t0 + 10.0 * _utmParams.Q0 - 4.0 * _utmParams.Q0 * _utmParams.Q0 -
+                            9.0 * e2) * (dd02*dd02) / 24.0;
+        _utmParams.fact4 = (61.0 + 90.0 * _utmParams.t0 + 298.0 * _utmParams.Q0 + 45.0 * _utmParams.t0 * _utmParams.t0 -
+                            252.0 * e2 - 3.0 * _utmParams.Q0 * _utmParams.Q0) * (dd02*dd02*dd02) / 720.0;
+
+        _utmParams.lof1 = _utmParams._a1 / (_utmParams.n0 * _utmParams.k0);
+        _utmParams.lof2 = (1.0 + 2.0 * _utmParams.t0 + _utmParams.Q0) * (dd02*_utmParams.dd0) / 6.0;
+        _utmParams.lof3 = (5.0 - 2.0 * _utmParams.Q0 + 28.0 * _utmParams.t0 - 3.0 * (_utmParams.Q0*_utmParams.Q0) + 8.0 *
+                           e2 + 24.0 * (_utmParams.t0*_utmParams.t0)) * (dd02*dd02*_utmParams.dd0) / 120.0;
+
+        _utmParams._a2 = (_utmParams.lof1-_utmParams.lof2+_utmParams.lof3) / cos(_utmParams.phi1);
+        _utmParams._a3 = _utmParams._a2 * 180.0 / M_PI;
     }
 
-    void Ellipsoid::initializeLLtoUTMParams(const GeoPointRad3D& geoPt) {
 
+    /**
+     * Initializes LLA to UTM conversion parameters
+     */
+    void Ellipsoid::initializeLLtoUTMParams(const GeoPointRad3D& geoPt) {
+        double e2 = _eccentricity*_eccentricity;
+        double e4 = e2*e2;
+        double e6 = e4*e2;
+        //double eSinLat = _eccentricity * sin(geoPt.lat);
+        _utmParams.rho = meridRadiusOfCurvature( geoPt.lat ); 
+                        /*_semiMajorAxis * (1.0 - e2) / 
+                         sqrt( (1.0-(eSinLat*eSinLat))*(1.0-(eSinLat*eSinLat))*(1.0-(eSinLat*eSinLat)) );*/
+        _utmParams.nu = primeVertRadiusOfCurvature( geoPt.lat );
+        double var1 = 0.0;
+        if( geoPt.lon < 0.0 )
+            var1 = ((int)((180.0 + geoPt.lon)/6.0)) + 1.0;
+        else
+            var1 = ((int)(geoPt.lon/6.0)) + 31.0;
+        double var2 = (6.0 * var1) - 183.0;
+        double var3 = geoPt.lon - var2;
+        _utmParams.p = var3 * 3600.0 / 10000.0;
+
+        _utmParams.A0 = _semiMajorAxis*(1.0 - e2/4.0 - 3.0*e4/64.0 - 5.0*e6/256.0);
+        _utmParams.B0 = _semiMajorAxis*(3.0 * e2/8.0 + 3.0*e4/32.0 + 45.0*e6/1024.0);
+        _utmParams.C0 = _semiMajorAxis*(15.0 * e4/256.0 + 45.0*e6/1024.0);
+        _utmParams.D0 = _semiMajorAxis*(35.0 * e6/3072);
+        // E0 estimate... come back and calculate based on ellipsoid
+        _utmParams.E0 = 0.000312705;
+
+        _utmParams.S = _utmParams.A0 * geoPt.lat - _utmParams.B0 * sin(2*geoPt.lat) +
+                       _utmParams.C0 * sin(4*geoPt.lat) - _utmParams.D0 * sin(6.0*geoPt.lat);
+
+        _utmParams.K1 = _utmParams.S * _utmParams.k0;
+        _utmParams.K2 = _utmParams.nu * sin(geoPt.lat) * cos(geoPt.lat) * (_utmParams.sin1*_utmParams.sin1) *
+                        _utmParams.k0 * (100000000);
+        double sin12 = _utmParams.sin1*_utmParams.sin1;
+        double cosLat = cos(geoPt.lat);
+        double cosLat2 = cosLat*cosLat;
+        double tanLat = tan(geoPt.lat);
+        double tanLat2 = tanLat*tanLat;
+        _utmParams.K3 = (((sin12*sin12) * _utmParams.nu * sin(geoPt.lat) * 
+                         (cosLat*cosLat*cosLat)) / 24.0) *
+                         (5.0 - (tanLat2) + 9.0 * _ee * (cosLat) + 4.0 * (_ee*_ee) * 
+                         (cosLat2*cosLat2)) * _utmParams.k0 * (10000000000000000L);
+        _utmParams.K4 = _utmParams.nu * cosLat * _utmParams.sin1 * _utmParams.k0 * 10000;
+        double sin1cosLat = _utmParams.sin1 * cos(geoPt.lat);
+        _utmParams.K5 = (sin1cosLat*sin1cosLat*sin1cosLat) * (_utmParams.nu/6.0) *
+                        (1.0 - tanLat2 + _ee * cosLat2) * _utmParams.k0 *
+                        (10000000000000000L);
+        double pSin1 = _utmParams.p * _utmParams.sin1;
+        double pSin12 = pSin1*pSin1;
+        _utmParams.A6 = ( (pSin12*pSin12*pSin12) * _utmParams.nu * sin(geoPt.lat) * (cosLat2*cosLat2*cosLat) / 720.0) *
+                        (61.0 - 58.0 * tanLat2 + (tanLat2*tanLat2) + 270.0 * _ee * cosLat2 - 330.0 * _ee * 
+                        (sin(geoPt.lat)*sin(geoPt.lat))) * _utmParams.k0 * (1.0E+24);
     }
 
     /**
@@ -267,8 +365,8 @@ namespace spatial {
                   enuPt.z*sin(refPt.lat);
     }
 
-    void Ellipsoid::latLonAltToUTM( const GeoPointRad3D& llaPt, CartesianPoint3D &utmPt ) const {
-    
+    void Ellipsoid::latLonAltToUTM( const GeoPointRad3D& llaPt, CartesianPoint3D &utmPt ) {
+        initializeLLtoUTMParams( llaPt ); 
     
 
     }

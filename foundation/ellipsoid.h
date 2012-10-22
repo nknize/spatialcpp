@@ -58,7 +58,7 @@ namespace spatial {
             double Q0;
             double lof1, lof2, lof3;
             double phi1;
-            double fact1, fact2, fact3;
+            double fact1, fact2, fact3, fact4;
             double zoneCM;
             static const double k0 = 0.9996; // central meridian scale factor for UTM
         } UTMParams;
@@ -96,10 +96,9 @@ namespace spatial {
         void ecfToENU( const CartesianPoint3D& ecfPt, const GeoPointRad3D& refPt, 
                        CartesianPoint3D &enuPt ) const;
         // utm
-
+        void latLonAltToUTM( const GeoPointRad3D& llaPt, CartesianPoint3D &utmPt );
+        
         // mgrs
-
-        void latLonAltToUTM( const GeoPointRad3D& llaPt, CartesianPoint3D &utmPt ) const;
         void enuToUTM( const CartesianPoint3D& enuPt, const GeoPointRad3D& refPt, 
                        CartesianPoint3D &utmPt ) const;
         void ecfToUTM( const CartesianPoint3D& ecfPt, CartesianPoint3D& utmPt ) const;
@@ -143,7 +142,7 @@ namespace spatial {
             latLonAltToECF( llaRad, ecef );
         }
         void latLonAltDegToUTM( const GeoPointDeg3D& llaDeg,
-                                CartesianPoint3D& utm) const {
+                                CartesianPoint3D& utm) {
             GeoPointRad3D llaRad;
             transform(llaDeg, llaRad);
             latLonAltToUTM( llaRad, utm );
@@ -198,7 +197,8 @@ namespace spatial {
         double _semiMinorAxis;
         double _flattening;
         double _eccentricity;
-        
+        double _ee;
+
         UTMParams _utmParams;
     };
 } // spatial namespace
