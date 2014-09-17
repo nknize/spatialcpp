@@ -1,4 +1,8 @@
 language: cpp
 compiler:
   - gcc
+install:
+  - sudo apt-get install libboost-system-dev libboost-program-options-dev libboost-geometry-utils-perl
 script: scons
+os:
+  - linux
