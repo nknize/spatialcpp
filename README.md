@@ -1,4 +1,4 @@
 spatialcpp
 ==========
 
-Useful Spatial Utilities for C++
+Useful Spatial Utilities for C++11
