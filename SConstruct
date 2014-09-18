@@ -242,10 +242,10 @@ def doConfigure( myenv, shell=False ):
             print( "c++ compiler not installed!" )
             Exit(1)
 
-    if nix and not shell:
-        if not darwin and not conf.CheckLib( "stdc++" ):
-            print( "can't find stdc++ library which is needed" );
-            Exit(1)
+#    if nix and not shell:
+#        if not darwin and not conf.CheckLib( "stdc++" ):
+#            print( "can't find stdc++ library which is needed" );
+#            Exit(1)
 
     def myCheckLib( poss , failIfNotFound=False , staticOnly=False):
 
