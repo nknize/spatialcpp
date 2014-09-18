@@ -51,9 +51,10 @@ def has_option( name ):
     return x
 
 add_option( "release", "release build", 0, True )
-add_option( "static", "fully static build", 0, True )
+add_option( "static", "fully static build", 0, False )
+add_option( "dynamic", "dynamic library build", 1, True )
 
-add_option( "64", "whether to force 64 bit", 0, True, "force64" )
+add_option( "64", "whether to force 64 bit", 1, True, "force64" )
 add_option( "32", "whether to force 32 bit", 0, True, "force32" )
 
 add_option( "extrapath", "comma separated list of add'l paths  (--extrapath /opt/foo/,/foo) static linking" , 1 , True )
@@ -87,6 +88,7 @@ if force64:
 force32 = has_option( "force32" )
 release = has_option( "release" )
 static = has_option( "static" )
+dynamic = has_option( "dynamic" )
 
 env = Environment( MSVS_ARCH=msarch , tools = ["default"], toolpath = '.' )
 
@@ -130,21 +132,19 @@ if "linux2" == os.sys.platform or "linux3" == os.sys.platform:
 
     if static:
         env.Append( LINKFLAGS=" -static " )
+    else:
+        env.Append( LINKFLAGS=" -shared " )
 
 if nix:
 
     if has_option( "distcc" ):
         env["CSS"] = "distcc " + env["CXX"]
 
-    env.Append( CPPFLAGS="-fPIC -fno-strict-aliasing -lm -ggdb -gdwarf-2 -Wall -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch" )
+    env.Append( CPPFLAGS="-O0 -std=c++11 -rdynamic -fPIC -fno-omit-frame-pointer -fno-strict-aliasing -lm -ggdb -gdwarf-2 -Wall -Werror -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch" )
     if linux:
         env.Append( CPPFLAGS=" -Werror " )
-        if not has_option('clang'):
-            env.Append( CPPFLAGS=" -fno-builtin-memcmp " )
 
-        env.Append( CPPDEFINES="_FILE_OFFSET_BITS=64" )
-        env.Append( CXXFLAGS=" -Wnon-virtual-dtor " )
-        env.Append( LINKFLAGS=" -fPIC -pthread -rdynamic" )
+        env.Append( LINKFLAGS=" -fPIC -rdynamic" )
         env.Append( LIBS=[] )
 
         # color gcc friendly
@@ -158,6 +158,9 @@ if nix:
             env.Append( CFLAGS="-m64" )
             env.Append( CXXFLAGS="-m64" )
             env.Append( LINKFLAGS="-m64" )
+
+        if dynamic:
+            env.Append( LINKFLAGS=" -shared " )
 
 extraLibPlaces = []
 
@@ -208,10 +211,10 @@ def doConfigure( myenv, shell=False ):
             print( "c++ compiler not installed!" )
             Exit(1)
 
-    if nix and not shell:
-        if not conf.CheckLib( "stdc++" ):
-            print( "can't find stdc++ library which is needed" );
-            Exit(1)
+##    if nix and not shell:
+##        if not conf.CheckLib( "stdc++" ):
+##            print( "can't find stdc++ library which is needed" );
+##            Exit(1)
 
     def myCheckLib( poss , failIfNotFound=False , staticOnly=False):
 
@@ -290,5 +293,4 @@ env = doConfigure( env )
 
 
 # main library target
-env.Library( "spatialcpp", coreLibraryFiles )
-
+env.SharedLibrary( "spatialcpp", coreLibraryFiles )

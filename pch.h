@@ -17,7 +17,10 @@
 #include <stdlib.h>
 #include <sstream>
 #include <cmath>
+#include <mutex>
 
+#include <boost/unordered_map.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/geometry/geometry.hpp>
 
 namespace spatial {
