@@ -11,21 +11,21 @@ namespace spatial {
     public:
         CartesianPoint3D() : x(0), y(0), z(0) {}
 
-        const double u() const { return y; }
-        const double v() const { return x; }
-        const double w() const { return z; }
+        inline const double u() const { return y; }
+        inline const double v() const { return x; }
+        inline const double w() const { return z; }
 
-        const double L() const { return x; }
-        const double M() const { return y; }
-        const double N() const { return z; }
+        inline const double L() const { return x; }
+        inline const double M() const { return y; }
+        inline const double N() const { return z; }
 
-        void u( const double u ) { y = u; }
-        void v( const double v ) { x = v; }
-        void w( const double w ) { z = w; }
+        inline void u( const double u ) { y = u; }
+        inline void v( const double v ) { x = v; }
+        inline void w( const double w ) { z = w; }
 
-        void L( const double L ) { x = L; }
-        void M( const double M ) { y = M; }
-        void N( const double N ) { z = N; }
+        inline void L( const double L ) { x = L; }
+        inline void M( const double M ) { y = M; }
+        inline void N( const double N ) { z = N; }
 
         double x, y, z; 
     };
