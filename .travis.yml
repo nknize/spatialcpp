@@ -1,6 +1,6 @@
 language: cpp
 compiler:
-  - gcc
+  - g++
 before_install:
   # BOOST
   - sudo add-apt-repository -y ppa:irie/boost
