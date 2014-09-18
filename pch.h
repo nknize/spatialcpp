@@ -51,8 +51,8 @@ void uasserted(int msgid, const char *msg) NO_RETURN;
 #define uassert(msgid, msg, expr) (void)( (bool)(!!(expr)) || (uasserted(msgid, msg), 0) )
 #endif
 
-    typedef cs::geographic<degree> GeoDeg;
-    typedef cs::geographic<radian> GeoRad;
-    typedef cs::cartesian Cartesian;
+typedef cs::geographic<degree> GeoDeg;
+typedef cs::geographic<radian> GeoRad;
+typedef cs::cartesian Cartesian;
 
-}
+}  // namespace spatial

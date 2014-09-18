@@ -79,7 +79,15 @@ def removeIfInList( lst , thing ):
     if thing in lst:
         lst.remove( thing )
 
+nix = False
+linux = False
+linux64 = False
+darwin = False
 windows = False
+freebsd = False
+openbsd = False
+solaris = False
+
 force64 = has_option( "force64" )
 msarch = None
 if force64:
@@ -100,6 +108,7 @@ if has_option( "cc" ):
     env["CC"] = get_option( "cc" )
 
 boostCompiler = GetOption( "boostCompiler" )
+
 if boostCompiler is None:
     boostCompiler = ""
 else:
@@ -114,7 +123,29 @@ else:
 # ----- SOURCE FILES ------
 coreLibraryFiles = Split( "foundation/ellipsoid.cpp" )
 
-if "linux2" == os.sys.platform or "linux3" == os.sys.platform:
+def filterExists(paths):
+    return filter(os.path.exists, paths)
+
+if "darwin" == os.sys.platform:
+    darwin = True
+    platform = "osx" # prettier than darwin
+
+    if env["CXX"] is None:
+        if os.path.exists( "/usr/bin/g++-4.2" ):
+            env["CXX"] = "g++-4.2"
+
+    nix = True
+
+    if force64:
+        env.Append( CPPPATH=["/usr/64/include"] )
+        env.Append( LIBPATH=["/usr/64/lib"] )
+        if installDir == DEFAULT_INSTALL_DIR and not distBuild:
+            installDir = "/usr/64/"
+    else:
+        env.Append( CPPPATH=filterExists(["/sw/include" , "/opt/local/include"]) )
+        env.Append( LIBPATH=filterExists(["/sw/lib/", "/opt/local/lib"]) )
+
+elif "linux2" == os.sys.platform or "linux3" == os.sys.platform:
     linux = True
     platform = "linux"
 
@@ -141,6 +172,7 @@ if nix:
         env["CSS"] = "distcc " + env["CXX"]
 
     env.Append( CPPFLAGS="-O0 -std=c++11 -rdynamic -fPIC -fno-omit-frame-pointer -fno-strict-aliasing -lm -ggdb -gdwarf-2 -Wall -Werror -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch" )
+
     if linux:
         env.Append( CPPFLAGS=" -Werror " )
 
@@ -158,6 +190,8 @@ if nix:
             env.Append( CFLAGS="-m64" )
             env.Append( CXXFLAGS="-m64" )
             env.Append( LINKFLAGS="-m64" )
+        if darwin:
+            env.Append( LINKFLAGS="-stdlib=libc++")
 
         if dynamic:
             env.Append( LINKFLAGS=" -shared " )
@@ -199,7 +233,7 @@ moduleNames = []
 #        modules.append( myModule )
 #                                        
 #    if myModule and "customIncludes" in dir(myModule) and myModule.customIncludes:
-#        pass
+#        pass    
 
 def doConfigure( myenv, shell=False ):
     conf = Configure(myenv)
@@ -210,11 +244,10 @@ def doConfigure( myenv, shell=False ):
         if not conf.CheckCXX():
             print( "c++ compiler not installed!" )
             Exit(1)
-
-##    if nix and not shell:
-##        if not conf.CheckLib( "stdc++" ):
-##            print( "can't find stdc++ library which is needed" );
-##            Exit(1)
+#    if nix and not shell:
+#        if not darwin and not conf.CheckLib( "stdc++" ):
+#            print( "can't find stdc++ library which is needed" );
+#            Exit(1)
 
     def myCheckLib( poss , failIfNotFound=False , staticOnly=False):
 
@@ -253,7 +286,7 @@ def doConfigure( myenv, shell=False ):
 
         return False
 
-    if not conf.CheckCXXHeader( "boost/filesystem/operations.hpp" ):
+    if not darwin and not conf.CheckCXXHeader( "boost/filesystem/operations.hpp" ):
         print( "can't find boost headers" )
         if shell:
             print( "\tshell might not compile" )
@@ -288,7 +321,7 @@ def doConfigure( myenv, shell=False ):
     myenv.Append(STATICFILES=staticlibfiles)
 
     return conf.Finish()
-
+env.Append( LIBS=[] )
 env = doConfigure( env )
 
 

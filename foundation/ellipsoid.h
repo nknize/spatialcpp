@@ -1,7 +1,7 @@
 // ellipsoid.h
 
 /**
- *    Copyright (C) 2012 Thermopylae Sciences + Technology
+ *    Copyright (C) 2012
  * 
  *    This program is free software: you can redistribute it and/or  modify
  *    it under the terms of the GNU Affero General Public License, version 3,
@@ -35,7 +35,7 @@ namespace spatial {
          * Parameter structure for converting this projection definition to
          * UTM
          */
-        typedef struct {
+        struct UTMParams {
             // lat lon to utm params
             double rm;
             double n;
@@ -45,7 +45,7 @@ namespace spatial {
             double A0, B0, C0, D0, E0;
             double p;
             double K1, K2, K3, K4, K5, A6;
-            static constexpr const double sin1 = 4.84814e-06; // legacy factor
+            static constexpr double sin1 = 4.84814e-06; // legacy factor
 
             // utm to lat lon params
             double arc;
@@ -62,8 +62,8 @@ namespace spatial {
             double phi1;
             double fact1, fact2, fact3, fact4;
             double zoneCM;
-            static constexpr const double k0 = 0.9996; // central meridian scale factor for UTM
-        } UTMParams;
+            static constexpr double k0 = 0.9996; // central meridian scale factor for UTM
+        };
 
         void initializeUTMtoLLParams( const CartesianPoint3D& utmPt );
         void initializeLLtoUTMParams( const GeoPointRad3D& geoPt );
@@ -187,7 +187,7 @@ namespace spatial {
 
         // convergence criteria for ecf to lla conversion
         // defined in 'The Manual of Photogrammetry'
-        static constexpr const double _ITERATION_THRESHOLD = 4.8481368110953599e-08;
+        static constexpr double _ITERATION_THRESHOLD = 4.8481368110953599e-08;
 
         // print this ellipsoid object
         // @TODO: Replace this operation with a string buffer
@@ -306,4 +306,4 @@ namespace spatial {
     inline Ellipsoid& ellipsoid(const unsigned int code = 7030) {
       return Ellipsoid::get(code);
     }
-} // spatial namespace
+}  // spatial namespace
