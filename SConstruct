@@ -136,7 +136,6 @@ if "darwin" == os.sys.platform:
     if force64:
         env.Append( CPPPATH=["/usr/64/include"] )
         env.Append( LIBPATH=["/usr/64/lib"] )
-        print("YO")
         if installDir == DEFAULT_INSTALL_DIR and not distBuild:
             installDir = "/usr/64/"
     else:
