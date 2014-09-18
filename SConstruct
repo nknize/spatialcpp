@@ -106,6 +106,7 @@ if has_option( "cc" ):
     env["CC"] = get_option( "cc" )
 
 boostCompiler = GetOption( "boostCompiler" )
+
 if boostCompiler is None:
     boostCompiler = ""
 else:
